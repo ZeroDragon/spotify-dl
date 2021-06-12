@@ -19,21 +19,26 @@ const artworkDownloader = async (url, filename) => {
 const getSong = async (directory, song) => {
   const artist = song.artists[0]
   const songs = await ytMusic.searchMusics(`${song.name} - ${artist}`)
+  if (!songs.length) {
+    process.stdout.write('Error: could not find', `${song.name} - ${artist}`)
+    return Promise.resolve()
+  }
   const { youtubeId } = songs[0]
+  const cleanSong = sanitize(song.name)
   const cleanArtist = sanitize(artist)
-  const filename = `${song.name} - ${cleanArtist}`.replace(/\s\s+/g, ' ').trim()
+  const filename = `${cleanSong} - ${cleanArtist}`.replace(/\s\s+/g, ' ').trim()
   const songFn = `${filename}.mp3`
   const artworkFn = `${filename}.jpg`
   await artworkDownloader(song.cover_url, `${directory}/${artworkFn}`)
 
-  const p = new Promise((resolve, reject) => {
+  const p = new Promise((resolve) => {
     const yt = new Ytmp3({
       outputPath: directory
     })
     yt.download(youtubeId, songFn)
     yt.on('finished', (err, response) => {
       if (err) console.error(err)
-      console.log(' ✅')
+      process.stdout.write(' ✅')
       ffmetadata.write(
         `${directory}/${songFn}`,
         {
@@ -47,12 +52,13 @@ const getSong = async (directory, song) => {
         }, err => {
           if (err) throw err
           unlinkSync(`${directory}/${artworkFn}`)
-          resolve()
+          return resolve()
         }
       )
     })
-    yt.on('error', err => {
-      reject(err)
+    yt.on('error', _ => {
+      console.error(' - ', song.id, 'Was not possible to download')
+      process.exit(1)
     })
     yt.on('progress', ({ progress }) => {
       process.stdout.clearLine()
@@ -103,6 +109,7 @@ const trackLooper = async (directory, [track, ...tail]) => {
   }
   const trackData = await spot.getTrack(track)
   await getSong(directory, trackData)
+  console.log(` ${tail.length}`)
   await cacheFile.addTrack(track)
   return await trackLooper(directory, tail)
 }
@@ -110,7 +117,7 @@ const trackLooper = async (directory, [track, ...tail]) => {
 const playlistParser = async (url) => {
   await spot.checkCredentials()
   const { name, tracks } = await spot.getPlaylist(url)
-  console.log('Got playlist', name)
+  console.log('Got playlist', name, tracks.length, 'songs')
   const directory = `${process.cwd()}/${name}`
   try {
     await fs.mkdir(directory)
