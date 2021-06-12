@@ -8,6 +8,13 @@ Heavily inspired in this awesome project: https://github.com/SwapnilSoni1999/spo
 
 ## Installation
 Just clone and npm install  
+
+## Requeriments
+You will need to set 2 environmentan variables:  
+- SPOTIFY_CLIENT  
+- SPOTIFY_SECRET  
+get those from the spotify developers site
+
 You will need ffmpeg installed
 
 ## Usage
