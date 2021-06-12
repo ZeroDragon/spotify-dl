@@ -9,8 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.1",
+    "ffmetadata": "^1.7.0",
     "node-youtube-music": "^0.3.5",
-    "youtube-dl-exec": "^1.2.4",
+    "sanitize-filename": "^1.6.3",
+    "spotify-web-api-node": "^5.0.2",
     "youtube-mp3-downloader": "^0.7.7"
   },
   "devDependencies": {
