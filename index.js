@@ -2,19 +2,12 @@ const ytMusic = require('node-youtube-music').default
 const Ytmp3 = require('youtube-mp3-downloader')
 const sanitize = require('sanitize-filename')
 const fs = require('fs/promises')
-const { writeFileSync, readFileSync, createWriteStream, unlinkSync } = require('fs')
-const ffmetadata = require('ffmetadata')
-const axios = require('axios')
+const { writeFileSync, readFileSync } = require('fs')
 const Spotify = require('./spotify')
+const metadater = require('./metadater')
 
 const spot = new Spotify()
 const [,, playlistURL] = process.argv
-
-const artworkDownloader = async (url, filename) => {
-  const writer = createWriteStream(filename)
-  const artwork = await axios({ url, responseType: 'stream' })
-  artwork.data.pipe(writer)
-}
 
 const getSong = async (directory, song) => {
   const artist = song.artists[0]
@@ -28,33 +21,18 @@ const getSong = async (directory, song) => {
   const cleanArtist = sanitize(artist)
   const filename = `${cleanSong} - ${cleanArtist}`.replace(/\s\s+/g, ' ').trim()
   const songFn = `${filename}.mp3`
-  const artworkFn = `${filename}.jpg`
-  await artworkDownloader(song.cover_url, `${directory}/${artworkFn}`)
 
-  const p = new Promise((resolve) => {
+  const p = new Promise(resolve => {
     const yt = new Ytmp3({
       outputPath: directory
     })
     yt.download(youtubeId, songFn)
     yt.on('finished', (err, response) => {
       if (err) console.error(err)
-      process.stdout.write(' ✅')
-      ffmetadata.write(
-        `${directory}/${songFn}`,
-        {
-          artist,
-          album: song.album_name,
-          title: song.name,
-          date: song.release_date
-        }, {
-          attachments: [`${directory}/${artworkFn}`],
-          'id3v2.3': true
-        }, err => {
-          if (err) throw err
-          unlinkSync(`${directory}/${artworkFn}`)
-          return resolve()
-        }
-      )
+      process.stdout.clearLine()
+      process.stdout.cursorTo(0)
+      process.stdout.write(` ✓ ${song.name} `)
+      metadater(song.id, `${directory}/${songFn}`, directory).then(_ => resolve())
     })
     yt.on('error', _ => {
       console.error(' - ', song.id, 'Was not possible to download')
@@ -63,7 +41,7 @@ const getSong = async (directory, song) => {
     yt.on('progress', ({ progress }) => {
       process.stdout.clearLine()
       process.stdout.cursorTo(0)
-      process.stdout.write(`=> ${song.name} ${progress.percentage.toFixed(2)}%`)
+      process.stdout.write(` → ${song.name} ${progress.percentage.toFixed(2)}%`)
     })
   })
   return p
@@ -109,7 +87,7 @@ const trackLooper = async (directory, [track, ...tail]) => {
   }
   const trackData = await spot.getTrack(track)
   await getSong(directory, trackData)
-  console.log(` ${tail.length}`)
+  console.log(` (${tail.length} songs left)`)
   await cacheFile.addTrack(track)
   return await trackLooper(directory, tail)
 }
@@ -117,7 +95,7 @@ const trackLooper = async (directory, [track, ...tail]) => {
 const playlistParser = async (url) => {
   await spot.checkCredentials()
   const { name, tracks } = await spot.getPlaylist(url)
-  console.log('Got playlist', name, tracks.length, 'songs')
+  console.log('Got playlist', name, `(${tracks.length} songs)`)
   const directory = `${process.cwd()}/${name}`
   try {
     await fs.mkdir(directory)

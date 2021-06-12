@@ -5,7 +5,7 @@ const axios = require('axios')
 const Spotify = require('./spotify')
 
 const spot = new Spotify()
-let displayLogs = false
+let standAlone = false
 
 const artworkDownloader = async (url, filename) => {
   const writer = createWriteStream(filename)
@@ -40,7 +40,7 @@ const getSong = async (directory, song, mp3Location) => {
       }, err => {
         if (err) throw err
         unlinkSync(`${directory}/${artworkFn}`)
-        if (displayLogs) console.log('Done')
+        if (standAlone) console.log('Done')
         return resolve()
       }
     )
@@ -51,13 +51,13 @@ const getSong = async (directory, song, mp3Location) => {
 const songParser = async (url, mp3, directory) => {
   await spot.checkCredentials()
   const track = await spot.getTrack(url)
-  if (displayLogs) console.log('Got data for:', track)
+  if (standAlone) console.log('Got data for:', track)
   await getSong(directory, track, mp3)
 }
 
 if (require.main === module) {
   const [,, songUrl, mp3File] = process.argv
-  displayLogs = true
+  standAlone = true
   songParser(songUrl, mp3File, process.cwd())
 } else {
   module.exports = songParser
