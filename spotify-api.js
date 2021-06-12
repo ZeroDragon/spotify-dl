@@ -1,8 +1,8 @@
 const SpotifyWebApi = require('spotify-web-api-node')
 
 const spotifyApi = new SpotifyWebApi({
-  clientId: 'acc6302297e040aeb6e4ac1fbdfd62c3',
-  clientSecret: '0e8439a1280a43aba9a5bc0a16f3f009'
+  clientId: process.env.SPOTIFY_CLIENT,
+  clientSecret: process.env.SPOTIFY_SECRET
 })
 
 const MAX_LIMIT_DEFAULT = 50

@@ -5,7 +5,8 @@ const axios = require('axios')
 const Spotify = require('./spotify')
 
 const spot = new Spotify()
-const [,, songUrl, mp3File] = process.argv
+
+let [,, songUrl, mp3File] = process.argv
 
 const artworkDownloader = async (url, filename) => {
   const writer = createWriteStream(filename)
@@ -18,7 +19,7 @@ const artworkDownloader = async (url, filename) => {
   })
 }
 
-const getSong = async (directory, song) => {
+const getSong = async (directory, song, mp3Location) => {
   const artist = song.artists[0]
   const cleanSong = sanitize(song.name)
   const cleanArtist = sanitize(artist)
@@ -48,11 +49,15 @@ const getSong = async (directory, song) => {
   return p
 }
 
-const playlistParser = async (url) => {
+const songParser = async (url, mp3, directory) => {
   await spot.checkCredentials()
   const track = await spot.getTrack(url)
-  console.log('Got song', track)
-  await getSong(process.cwd(), track)
+  // console.log('Adding metadata')
+  await getSong(directory, track, mp3)
 }
 
-playlistParser(songUrl)
+if (require.main === module) {
+  songParser(songUrl, mp3File, process.cwd())
+} else {
+  module.exports = songParser
+}
