@@ -13,7 +13,7 @@ const getSong = async (directory, song) => {
   const artist = song.artists[0]
   const songs = await ytMusic.searchMusics(`${song.name} - ${artist}`)
   if (!songs.length) {
-    process.stdout.write('Error: could not find', `${song.name} - ${artist}`)
+    process.stdout.write(`Error: could not find ${song.name} - ${artist}`)
     return Promise.resolve()
   }
   const { youtubeId } = songs[0]
